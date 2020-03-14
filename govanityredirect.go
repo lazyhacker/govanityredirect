@@ -1,5 +1,9 @@
-// govanityredirects creates static HTML that redirects go packages hosted
-// on a vanity domain to GitHub.
+// govanityredirects creates static HTMLs files that redirects go packages
+// vanity import paths to Github.
+//
+// govanityredirect looks under $GOPATH/src for the custom domain directory
+// and traverse through the packages and create a go-import index.html file to
+// the output directory.
 package main // import "lazyhackergo.com/govanityredirect"
 
 import (
@@ -16,7 +20,10 @@ import (
 const html = `<html>
 <head>
 <meta name="go-import" content="{{.Domain}}/{{.Repo}} git https://github.com/{{.Github}}/{{.Repo}}">
+<meta http-equiv="refresh" content="2; url=https://godoc.org/{{.Domain}}/{{.Repo}}">
 </head>
+<body>
+Redirecting to <a href="https://godoc.org/{{.Domain}}/{{.Repo}}">https://godoc.org/{{.Domain}}/{{.Repo}}</a>.
 </html>
 `
 
@@ -95,7 +102,7 @@ func Generate() error {
 
 func writeIndexHTML(path string, data templateData) error {
 
-	path = filepath.Join(*out, data.Domain, data.Repo)
+	path = filepath.Join(*out, data.Repo)
 
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("Failed to mkdir %q: %s", path, err)
