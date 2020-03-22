@@ -19,26 +19,29 @@ import (
 
 const html = `<html>
 <head>
-<meta name="go-import" content="{{.Domain}}/{{.Repo}} git https://github.com/{{.Github}}/{{.Repo}}">
-<meta http-equiv="refresh" content="2; url=https://godoc.org/{{.Domain}}/{{.Repo}}">
+{{ range .Domain }}
+<meta name="go-import" content="{{ . }}/{{$.Repo}} git https://github.com/{{$.Github}}/{{$.Repo}}">
+{{ end }}
+<meta http-equiv="refresh" content="2; url=https://godoc.org/{{index .Domain 0}}/{{.Repo}}">
 </head>
 <body>
-Redirecting to <a href="https://godoc.org/{{.Domain}}/{{.Repo}}">https://godoc.org/{{.Domain}}/{{.Repo}}</a>.
+Redirecting to <a href="https://godoc.org/{{index .Domain 0}}/{{.Repo}}">https://godoc.org/{{index .Domain 0}}/{{.Repo}}</a>.
 </html>
 `
 
 // templateData holds the data to be rendered by the template
 type templateData struct {
-	Domain string // vanity domain
-	Repo   string // github repository name
-	Github string // github user name
+	Domain []string // vanity domains
+	Repo   string   // github repository name
+	Github string   // github user name
 }
 
 var (
-	vanity = flag.String("domain", "", "vanity domain to forward to")
-	user   = flag.String("github", "", "github user name")
-	out    = flag.String("outdir", "", "output directory for the redirect html files")
-	tmpl   = template.Must(template.New("index").Parse(html))
+	rootdir = flag.String("repo", "", "The root dir of all the depos in $GOPATH/src/...")
+	vanity  = flag.String("vanity", "", "vanity domain(s) to forward to (comma separated)")
+	user    = flag.String("github", "", "github user name")
+	out     = flag.String("outdir", "", "output directory for the redirect html files")
+	tmpl    = template.Must(template.New("index").Parse(html))
 )
 
 // Generate walks through the the vanity domain in your $GOPATH/src and creates
@@ -46,7 +49,7 @@ var (
 func Generate() error {
 
 	// local path to the vanity domain repos
-	root := filepath.Join(filepath.Join(build.Default.GOPATH, "src"), *vanity)
+	root := filepath.Join(filepath.Join(build.Default.GOPATH, "src"), *rootdir)
 
 	abs, err := filepath.Abs(*out)
 
@@ -76,20 +79,23 @@ func Generate() error {
 			}
 
 			// Skip files and if the directory is the vanity domain root
-			if s.Mode().IsDir() && f.Name() != *vanity {
+			if s.Mode().IsDir() && f.Name() != *rootdir {
 				var repo string
 				dirs := strings.Split(path, string(os.PathSeparator))
 				for i := 0; i < len(dirs); i++ {
-					if dirs[i] == *vanity {
+					if dirs[i] == *rootdir {
 						repo = strings.Join(dirs[i+1:], string(os.PathSeparator))
 						break
 					}
 				}
+
+				vd := strings.Split(*vanity, ",")
 				data := templateData{
-					Domain: *vanity,
+					Domain: vd,
 					Repo:   repo,
 					Github: *user,
 				}
+				log.Println(data)
 				writeIndexHTML(path, data)
 			}
 			return nil
@@ -121,7 +127,7 @@ func main() {
 
 	flag.Parse()
 
-	if *vanity == "" || *out == "" || *user == "" {
+	if *vanity == "" || *out == "" || *user == "" || *rootdir == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
