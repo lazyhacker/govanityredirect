@@ -4,7 +4,7 @@
 // govanityredirect looks under $GOPATH/src for the custom domain directory
 // and traverse through the packages and create a go-import index.html file to
 // the output directory.
-package main // import "lazyhackergo.com/govanityredirect"
+package main // import "lazyhacker.dev/govanityredirect"
 
 import (
 	"flag"
