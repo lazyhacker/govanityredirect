@@ -95,7 +95,6 @@ func Generate() error {
 					Repo:   repo,
 					Github: *user,
 				}
-				log.Println(data)
 				writeIndexHTML(path, data)
 			}
 			return nil
