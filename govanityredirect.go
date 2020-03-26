@@ -41,6 +41,7 @@ var (
 	vanity  = flag.String("vanity", "", "vanity domain(s) to forward to (comma separated)")
 	user    = flag.String("github", "", "github user name")
 	out     = flag.String("outdir", "", "output directory for the redirect html files")
+	alt     = flag.String("alt", "vanity", "if index.html exists write to index.html.<alt> instead (default: vanity)")
 	tmpl    = template.Must(template.New("index").Parse(html))
 )
 
@@ -114,12 +115,19 @@ func writeIndexHTML(path string, data templateData) error {
 	}
 
 	outfile := filepath.Join(path, "index.html")
+
+	if _, err := os.Stat(outfile); err == nil {
+		fmt.Printf("%v exists!.", outfile)
+		outfile = fmt.Sprintf("%v.%v", outfile, *alt)
+		fmt.Printf("  Writing to %v instead.\n", outfile)
+	}
 	f, err := os.Create(outfile)
 	if err != nil {
 		return fmt.Errorf("failed to create %v: %v", outfile, err)
 	}
-	log.Printf("Writing %v\n", outfile)
+	fmt.Printf("Writing %v\n", outfile)
 	return tmpl.Execute(f, data)
+
 }
 
 func main() {
